@@ -30,6 +30,9 @@ public class BankEntryService {
     public BankEntry updateEntry(Long id, BankEntry updated) {
         BankEntry entry = bankEntryRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("통장 기록을 찾을 수 없습니다: " + id));
+        if (Boolean.TRUE.equals(entry.getDeleted())) {
+            throw new NoSuchElementException("삭제된 기록은 수정할 수 없습니다: " + id);
+        }
         entry.setType(updated.getType());
         entry.setAmount(updated.getAmount());
         entry.setCategory(updated.getCategory());
@@ -42,6 +45,9 @@ public class BankEntryService {
     public void deleteEntry(Long id) {
         BankEntry entry = bankEntryRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("통장 기록을 찾을 수 없습니다: " + id));
+        if (Boolean.TRUE.equals(entry.getDeleted())) {
+            return;
+        }
         entry.setDeleted(true);
         entry.setDeletedAt(LocalDateTime.now());
         bankEntryRepository.save(entry);

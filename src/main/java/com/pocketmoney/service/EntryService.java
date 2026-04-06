@@ -30,6 +30,9 @@ public class EntryService {
     public Entry updateEntry(Long id, Entry updated) {
         Entry entry = entryRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("기록을 찾을 수 없습니다: " + id));
+        if (Boolean.TRUE.equals(entry.getDeleted())) {
+            throw new NoSuchElementException("삭제된 기록은 수정할 수 없습니다: " + id);
+        }
         entry.setType(updated.getType());
         entry.setAmount(updated.getAmount());
         entry.setCategory(updated.getCategory());
@@ -43,6 +46,9 @@ public class EntryService {
     public void deleteEntry(Long id) {
         Entry entry = entryRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("기록을 찾을 수 없습니다: " + id));
+        if (Boolean.TRUE.equals(entry.getDeleted())) {
+            return; // 이미 삭제됨
+        }
         entry.setDeleted(true);
         entry.setDeletedAt(LocalDateTime.now());
         entryRepository.save(entry);
