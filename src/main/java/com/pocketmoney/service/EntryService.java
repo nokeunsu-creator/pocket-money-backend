@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
 
@@ -20,13 +21,11 @@ public class EntryService {
         this.entryRepository = entryRepository;
     }
 
-    /** 기록 추가 */
     @Transactional
     public Entry createEntry(Entry entry) {
         return entryRepository.save(entry);
     }
 
-    /** 기록 수정 */
     @Transactional
     public Entry updateEntry(Long id, Entry updated) {
         Entry entry = entryRepository.findById(id)
@@ -39,34 +38,34 @@ public class EntryService {
         return entryRepository.save(entry);
     }
 
-    /** 기록 삭제 */
+    /** 소프트 삭제 */
     @Transactional
     public void deleteEntry(Long id) {
-        entryRepository.deleteById(id);
+        Entry entry = entryRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("기록을 찾을 수 없습니다: " + id));
+        entry.setDeleted(true);
+        entry.setDeletedAt(LocalDateTime.now());
+        entryRepository.save(entry);
     }
 
-    /** 월별 기록 조회 */
     public List<Entry> getEntriesByMonth(String userName, int year, int month) {
         YearMonth ym = YearMonth.of(year, month);
         LocalDate start = ym.atDay(1);
         LocalDate end = ym.atEndOfMonth();
-        return entryRepository.findByUserNameAndEntryDateBetweenOrderByEntryDateDescCreatedAtDesc(
+        return entryRepository.findByUserNameAndDeletedFalseAndEntryDateBetweenOrderByEntryDateDescCreatedAtDesc(
                 userName, start, end);
     }
 
-    /** 전체 기록 조회 */
     public List<Entry> getAllEntries(String userName) {
-        return entryRepository.findByUserNameOrderByEntryDateDescCreatedAtDesc(userName);
+        return entryRepository.findByUserNameAndDeletedFalseOrderByEntryDateDescCreatedAtDesc(userName);
     }
 
-    /** 전체 잔액 (총수입 - 총지출) */
     public int getTotalBalance(String userName) {
         int income = entryRepository.sumAmountByUserNameAndType(userName, EntryType.INCOME);
         int expense = entryRepository.sumAmountByUserNameAndType(userName, EntryType.EXPENSE);
         return income - expense;
     }
 
-    /** 월별 통계 */
     public Map<String, Object> getMonthlyStats(String userName, int year, int month) {
         YearMonth ym = YearMonth.of(year, month);
         LocalDate start = ym.atDay(1);
@@ -78,7 +77,6 @@ public class EntryService {
                 userName, EntryType.EXPENSE, start, end);
         int totalBalance = getTotalBalance(userName);
 
-        // 카테고리별 지출
         List<Object[]> expenseByCategory = entryRepository.sumByCategoryAndPeriod(
                 userName, EntryType.EXPENSE, start, end);
         List<Map<String, Object>> categoryStats = new ArrayList<>();
@@ -89,7 +87,6 @@ public class EntryService {
             categoryStats.add(item);
         }
 
-        // 카테고리별 수입
         List<Object[]> incomeByCategory = entryRepository.sumByCategoryAndPeriod(
                 userName, EntryType.INCOME, start, end);
         List<Map<String, Object>> incomeCategoryStats = new ArrayList<>();
@@ -110,5 +107,10 @@ public class EntryService {
         stats.put("incomeByCategory", incomeCategoryStats);
 
         return stats;
+    }
+
+    /** 삭제된 기록 조회 */
+    public List<Entry> getDeletedEntries(String userName) {
+        return entryRepository.findByUserNameAndDeletedTrueOrderByDeletedAtDesc(userName);
     }
 }

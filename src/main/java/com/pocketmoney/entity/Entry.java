@@ -49,9 +49,17 @@ public class Entry {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 삭제 여부 */
+    @Column(nullable = false)
+    private Boolean deleted = false;
+
+    /** 삭제 시각 */
+    private LocalDateTime deletedAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.deleted == null) this.deleted = false;
     }
 
     // === Getters & Setters ===
@@ -79,4 +87,10 @@ public class Entry {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Boolean getDeleted() { return deleted; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
+
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
 }

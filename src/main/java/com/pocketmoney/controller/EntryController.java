@@ -72,6 +72,16 @@ public class EntryController {
     }
 
     /**
+     * 삭제된 기록 조회
+     * GET /api/entries/deleted?user=건우
+     */
+    @GetMapping("/entries/deleted")
+    public ResponseEntity<List<Entry>> getDeletedEntries(@RequestParam String user) {
+        List<Entry> entries = entryService.getDeletedEntries(user);
+        return ResponseEntity.ok(entries);
+    }
+
+    /**
      * 월별 통계
      * GET /api/stats?user=건우&year=2026&month=4
      */

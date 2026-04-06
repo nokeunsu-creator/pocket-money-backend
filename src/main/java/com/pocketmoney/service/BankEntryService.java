@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
 
@@ -39,19 +40,23 @@ public class BankEntryService {
 
     @Transactional
     public void deleteEntry(Long id) {
-        bankEntryRepository.deleteById(id);
+        BankEntry entry = bankEntryRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("통장 기록을 찾을 수 없습니다: " + id));
+        entry.setDeleted(true);
+        entry.setDeletedAt(LocalDateTime.now());
+        bankEntryRepository.save(entry);
     }
 
     public List<BankEntry> getEntriesByMonth(String userName, int year, int month) {
         YearMonth ym = YearMonth.of(year, month);
         LocalDate start = ym.atDay(1);
         LocalDate end = ym.atEndOfMonth();
-        return bankEntryRepository.findByUserNameAndEntryDateBetweenOrderByEntryDateDescCreatedAtDesc(
+        return bankEntryRepository.findByUserNameAndDeletedFalseAndEntryDateBetweenOrderByEntryDateDescCreatedAtDesc(
                 userName, start, end);
     }
 
     public List<BankEntry> getAllEntries(String userName) {
-        return bankEntryRepository.findByUserNameOrderByEntryDateDescCreatedAtDesc(userName);
+        return bankEntryRepository.findByUserNameAndDeletedFalseOrderByEntryDateDescCreatedAtDesc(userName);
     }
 
     public int getTotalBalance(String userName) {
@@ -79,5 +84,9 @@ public class BankEntryService {
         stats.put("monthWithdraw", monthWithdraw);
 
         return stats;
+    }
+
+    public List<BankEntry> getDeletedEntries(String userName) {
+        return bankEntryRepository.findByUserNameAndDeletedTrueOrderByDeletedAtDesc(userName);
     }
 }

@@ -53,6 +53,12 @@ public class BankEntryController {
         return ResponseEntity.ok(entries);
     }
 
+    @GetMapping("/entries/deleted")
+    public ResponseEntity<List<BankEntry>> getDeletedEntries(@RequestParam String user) {
+        List<BankEntry> entries = bankEntryService.getDeletedEntries(user);
+        return ResponseEntity.ok(entries);
+    }
+
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats(
             @RequestParam String user,

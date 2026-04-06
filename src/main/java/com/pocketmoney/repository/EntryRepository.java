@@ -11,20 +11,20 @@ import java.util.List;
 
 public interface EntryRepository extends JpaRepository<Entry, Long> {
 
-    /** 특정 사용자의 기간별 기록 조회 (최신순) */
-    List<Entry> findByUserNameAndEntryDateBetweenOrderByEntryDateDescCreatedAtDesc(
+    /** 특정 사용자의 기간별 기록 조회 (최신순, 삭제 제외) */
+    List<Entry> findByUserNameAndDeletedFalseAndEntryDateBetweenOrderByEntryDateDescCreatedAtDesc(
             String userName, LocalDate startDate, LocalDate endDate);
 
-    /** 특정 사용자의 전체 기록 조회 (최신순) */
-    List<Entry> findByUserNameOrderByEntryDateDescCreatedAtDesc(String userName);
+    /** 특정 사용자의 전체 기록 조회 (최신순, 삭제 제외) */
+    List<Entry> findByUserNameAndDeletedFalseOrderByEntryDateDescCreatedAtDesc(String userName);
 
-    /** 특정 사용자 + 유형별 합계 (전체 기간) */
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Entry e WHERE e.userName = :userName AND e.type = :type")
+    /** 특정 사용자 + 유형별 합계 (전체 기간, 삭제 제외) */
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Entry e WHERE e.userName = :userName AND e.type = :type AND e.deleted = false")
     Integer sumAmountByUserNameAndType(@Param("userName") String userName, @Param("type") EntryType type);
 
-    /** 특정 사용자 + 기간 + 유형별 합계 */
+    /** 특정 사용자 + 기간 + 유형별 합계 (삭제 제외) */
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Entry e " +
-           "WHERE e.userName = :userName AND e.type = :type " +
+           "WHERE e.userName = :userName AND e.type = :type AND e.deleted = false " +
            "AND e.entryDate BETWEEN :startDate AND :endDate")
     Integer sumAmountByUserNameAndTypeAndPeriod(
             @Param("userName") String userName,
@@ -32,9 +32,9 @@ public interface EntryRepository extends JpaRepository<Entry, Long> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 
-    /** 카테고리별 합계 (특정 사용자 + 기간 + 유형) */
+    /** 카테고리별 합계 (삭제 제외) */
     @Query("SELECT e.category, SUM(e.amount) FROM Entry e " +
-           "WHERE e.userName = :userName AND e.type = :type " +
+           "WHERE e.userName = :userName AND e.type = :type AND e.deleted = false " +
            "AND e.entryDate BETWEEN :startDate AND :endDate " +
            "GROUP BY e.category ORDER BY SUM(e.amount) DESC")
     List<Object[]> sumByCategoryAndPeriod(
@@ -42,4 +42,7 @@ public interface EntryRepository extends JpaRepository<Entry, Long> {
             @Param("type") EntryType type,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    /** 삭제된 기록 조회 (최신 삭제순) */
+    List<Entry> findByUserNameAndDeletedTrueOrderByDeletedAtDesc(String userName);
 }
