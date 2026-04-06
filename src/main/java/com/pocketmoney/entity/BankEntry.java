@@ -42,7 +42,7 @@ public class BankEntry {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default false")
     private Boolean deleted = false;
 
     private LocalDateTime deletedAt;

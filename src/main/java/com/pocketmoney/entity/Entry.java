@@ -50,7 +50,7 @@ public class Entry {
     private LocalDateTime createdAt;
 
     /** 삭제 여부 */
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default false")
     private Boolean deleted = false;
 
     /** 삭제 시각 */
