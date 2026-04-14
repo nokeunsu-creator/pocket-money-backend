@@ -20,13 +20,28 @@ public class FamilyController {
     private final MemoRepository memoRepo;
     private final GrowthRecordRepository growthRepo;
     private final TimerRecordRepository timerRepo;
+    private final ProfilePhotoRepository photoRepo;
 
     public FamilyController(TodoRepository todoRepo, MemoRepository memoRepo,
-                            GrowthRecordRepository growthRepo, TimerRecordRepository timerRepo) {
+                            GrowthRecordRepository growthRepo, TimerRecordRepository timerRepo,
+                            ProfilePhotoRepository photoRepo) {
         this.todoRepo = todoRepo;
         this.memoRepo = memoRepo;
         this.growthRepo = growthRepo;
         this.timerRepo = timerRepo;
+        this.photoRepo = photoRepo;
+    }
+
+    // ==================== 프로필 사진 ====================
+
+    @GetMapping("/profile/photos")
+    public ResponseEntity<List<ProfilePhoto>> getAllPhotos() {
+        return ResponseEntity.ok(photoRepo.findAll());
+    }
+
+    @PutMapping("/profile/photo")
+    public ResponseEntity<ProfilePhoto> upsertPhoto(@RequestBody ProfilePhoto photo) {
+        return ResponseEntity.ok(photoRepo.save(photo));
     }
 
     // ==================== 할 일 ====================
