@@ -31,37 +31,26 @@ public class StudyService {
 
     // ========== 스케줄 (요일별 과목) ==========
 
-    /** 사용자의 전체 주간 스케줄 조회 (7개 요일) */
+    /** 사용자의 전체 주간 스케줄 조회 (7개 요일, 없으면 기본값 생성) */
+    @Transactional
     public List<StudySchedule> getSchedule(String userName) {
         List<StudySchedule> existing = scheduleRepo.findByUserNameOrderByDayOfWeek(userName);
-        // 7개 요일 모두 없으면 기본값으로 채워서 저장
-        if (existing.size() < 7) {
-            Map<DayOfWeek, StudySchedule> map = new EnumMap<>(DayOfWeek.class);
-            for (StudySchedule s : existing) map.put(s.getDayOfWeek(), s);
-            for (DayOfWeek dow : DayOfWeek.values()) {
-                if (!map.containsKey(dow)) {
-                    StudySchedule s = new StudySchedule();
-                    s.setUserName(userName);
-                    s.setDayOfWeek(dow);
-                    s.setSubjects("수학,영어,독서");
-                    map.put(dow, s);
-                }
-            }
-            existing = new ArrayList<>(map.values());
-            existing.sort(Comparator.comparing(StudySchedule::getDayOfWeek));
-            // 기본값 저장 (upsert)
-            saveDefaultIfMissing(userName, existing);
-        }
-        return existing;
-    }
+        if (existing.size() >= 7) return existing;
 
-    @Transactional
-    protected void saveDefaultIfMissing(String userName, List<StudySchedule> list) {
-        for (StudySchedule s : list) {
-            if (s.getId() == null) {
-                scheduleRepo.save(s);
+        Map<DayOfWeek, StudySchedule> map = new EnumMap<>(DayOfWeek.class);
+        for (StudySchedule s : existing) map.put(s.getDayOfWeek(), s);
+        for (DayOfWeek dow : DayOfWeek.values()) {
+            if (!map.containsKey(dow)) {
+                StudySchedule s = new StudySchedule();
+                s.setUserName(userName);
+                s.setDayOfWeek(dow);
+                s.setSubjects("수학,영어,독서");
+                map.put(dow, scheduleRepo.save(s));
             }
         }
+        List<StudySchedule> result = new ArrayList<>(map.values());
+        result.sort(Comparator.comparing(StudySchedule::getDayOfWeek));
+        return result;
     }
 
     /** 특정 요일의 과목 수정 */
@@ -81,6 +70,7 @@ public class StudyService {
     // ========== 오늘의 체크리스트 ==========
 
     /** 특정 날짜의 과목 + 체크 상태 반환 */
+    @Transactional
     public Map<String, Object> getDayStatus(String userName, LocalDate date) {
         DayOfWeek dow = date.getDayOfWeek();
         StudySchedule schedule = scheduleRepo.findByUserNameAndDayOfWeek(userName, dow)
