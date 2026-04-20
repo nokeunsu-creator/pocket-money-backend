@@ -39,13 +39,22 @@ public class TripController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Object> create(@RequestBody Map<String, Object> body) {
+        if (body == null || body.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "요청 본문이 비어있습니다");
+        }
         Trip trip = new Trip();
         applyFields(trip, body);
+        if (trip.getTitle() == null || trip.getTitle().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "여행 제목은 필수입니다");
+        }
         return toResponse(tripRepo.save(trip));
     }
 
     @PutMapping("/{id}")
     public Map<String, Object> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        if (body == null || body.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "요청 본문이 비어있습니다");
+        }
         Trip trip = tripRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "여행 없음: " + id));
         applyFields(trip, body);
@@ -59,20 +68,29 @@ public class TripController {
     }
 
     private void applyFields(Trip trip, Map<String, Object> body) {
-        if (body.containsKey("title")) trip.setTitle((String) body.get("title"));
-        if (body.containsKey("subtitle")) trip.setSubtitle((String) body.get("subtitle"));
-        if (body.containsKey("familyInfo")) trip.setFamilyInfo((String) body.get("familyInfo"));
-        if (body.containsKey("notes")) trip.setNotes((String) body.get("notes"));
-        if (body.containsKey("startDate")) {
-            Object v = body.get("startDate");
-            trip.setStartDate(v == null || ((String) v).isEmpty() ? null : LocalDate.parse((String) v));
-        }
-        if (body.containsKey("endDate")) {
-            Object v = body.get("endDate");
-            trip.setEndDate(v == null || ((String) v).isEmpty() ? null : LocalDate.parse((String) v));
-        }
+        if (body.containsKey("title")) trip.setTitle(asString(body.get("title")));
+        if (body.containsKey("subtitle")) trip.setSubtitle(asString(body.get("subtitle")));
+        if (body.containsKey("familyInfo")) trip.setFamilyInfo(asString(body.get("familyInfo")));
+        if (body.containsKey("notes")) trip.setNotes(asString(body.get("notes")));
+        if (body.containsKey("startDate")) trip.setStartDate(parseDate(body.get("startDate")));
+        if (body.containsKey("endDate")) trip.setEndDate(parseDate(body.get("endDate")));
         if (body.containsKey("days")) trip.setDaysJson(writeJson(body.get("days")));
         if (body.containsKey("budget")) trip.setBudgetJson(writeJson(body.get("budget")));
+    }
+
+    private String asString(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private LocalDate parseDate(Object value) {
+        if (value == null) return null;
+        String s = String.valueOf(value);
+        if (s.isEmpty()) return null;
+        try {
+            return LocalDate.parse(s);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 날짜 형식: " + s);
+        }
     }
 
     private String writeJson(Object value) {
@@ -89,7 +107,9 @@ public class TripController {
         try {
             return objectMapper.readTree(raw);
         } catch (JsonProcessingException e) {
-            return null;
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "저장된 여행 데이터가 손상되었습니다: " + e.getOriginalMessage());
         }
     }
 

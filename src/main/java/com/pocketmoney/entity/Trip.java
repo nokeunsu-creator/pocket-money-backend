@@ -1,6 +1,7 @@
 package com.pocketmoney.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -12,7 +13,8 @@ public class Trip {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 100)
+    @NotBlank
+    @Column(length = 100, nullable = false)
     private String title;
 
     @Column(length = 100)
