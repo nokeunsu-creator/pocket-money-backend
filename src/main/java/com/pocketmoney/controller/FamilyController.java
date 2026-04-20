@@ -3,6 +3,7 @@ package com.pocketmoney.controller;
 import com.pocketmoney.entity.*;
 import com.pocketmoney.repository.*;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,13 @@ public class FamilyController {
     private final TimerRecordRepository timerRepo;
     private final ProfilePhotoRepository photoRepo;
 
+    @Value("${family.child1:첫째}") private String familyChild1;
+    @Value("${family.child2:둘째}") private String familyChild2;
+    @Value("${family.mom:엄마}") private String familyMom;
+    @Value("${family.dad:아빠}") private String familyDad;
+    @Value("${family.me:나}") private String familyMe;
+    @Value("${family.wife:아내}") private String familyWife;
+
     public FamilyController(TodoRepository todoRepo, MemoRepository memoRepo,
                             GrowthRecordRepository growthRepo, TimerRecordRepository timerRepo,
                             ProfilePhotoRepository photoRepo) {
@@ -30,6 +38,20 @@ public class FamilyController {
         this.growthRepo = growthRepo;
         this.timerRepo = timerRepo;
         this.photoRepo = photoRepo;
+    }
+
+    // ==================== 가족 이름 ====================
+
+    @GetMapping("/family/names")
+    public Map<String, String> getFamilyNames() {
+        Map<String, String> names = new LinkedHashMap<>();
+        names.put("child1", familyChild1);
+        names.put("child2", familyChild2);
+        names.put("mom", familyMom);
+        names.put("dad", familyDad);
+        names.put("me", familyMe);
+        names.put("wife", familyWife);
+        return names;
     }
 
     // ==================== 프로필 사진 ====================
