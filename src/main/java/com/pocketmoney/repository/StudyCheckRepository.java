@@ -15,4 +15,8 @@ public interface StudyCheckRepository extends JpaRepository<StudyCheck, Long> {
 
     List<StudyCheck> findByUserNameAndDateBetweenOrderByDateDescCompletedAtDesc(
             String userName, LocalDate startDate, LocalDate endDate);
+
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT DISTINCT c.date FROM StudyCheck c WHERE c.userName = :userName ORDER BY c.date DESC")
+    List<LocalDate> findDistinctDatesByUserNameDesc(@org.springframework.data.repository.query.Param("userName") String userName);
 }

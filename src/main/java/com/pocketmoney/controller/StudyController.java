@@ -77,6 +77,12 @@ public class StudyController {
         return ResponseEntity.noContent().build();
     }
 
+    /** GET /api/study/streak?user=노건우 */
+    @GetMapping("/streak")
+    public ResponseEntity<Map<String, Object>> getStreak(@RequestParam String user) {
+        return ResponseEntity.ok(studyService.getStreak(user));
+    }
+
     /** GET /api/study/history?user=노건우&from=2026-04-01&to=2026-04-30 */
     @GetMapping("/history")
     public ResponseEntity<List<StudyCheck>> getHistory(

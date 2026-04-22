@@ -133,6 +133,62 @@ public class StudyService {
         return checkRepo.findByUserNameAndDateBetweenOrderByDateDescCompletedAtDesc(userName, start, end);
     }
 
+    // ========== 연속 공부일 (streak) ==========
+
+    /**
+     * 현재 streak: 오늘(또는 어제) 기준으로 연속된 공부일 수
+     * 최장 streak: 지금까지의 최장 연속 공부일
+     * 획득 배지: [3,7,14,30,50,100,200,365] 중 longest 이하인 마일스톤
+     */
+    public Map<String, Object> getStreak(String userName) {
+        List<LocalDate> dates = checkRepo.findDistinctDatesByUserNameDesc(userName);
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (dates.isEmpty()) {
+            result.put("current", 0);
+            result.put("longest", 0);
+            result.put("lastStudyDate", null);
+            result.put("badges", List.of());
+            return result;
+        }
+
+        Set<LocalDate> dateSet = new HashSet<>(dates);
+
+        // 현재 streak
+        LocalDate today = LocalDate.now();
+        LocalDate cursor = dateSet.contains(today) ? today : today.minusDays(1);
+        int current = 0;
+        if (dateSet.contains(cursor)) {
+            while (dateSet.contains(cursor)) {
+                current++;
+                cursor = cursor.minusDays(1);
+            }
+        }
+
+        // 최장 streak (날짜 배열을 오름차순으로 정렬해 연속 구간 계산)
+        List<LocalDate> ascending = new ArrayList<>(dateSet);
+        Collections.sort(ascending);
+        int longest = 1;
+        int run = 1;
+        for (int i = 1; i < ascending.size(); i++) {
+            if (ascending.get(i - 1).plusDays(1).equals(ascending.get(i))) {
+                run++;
+                longest = Math.max(longest, run);
+            } else {
+                run = 1;
+            }
+        }
+
+        int[] milestones = {3, 7, 14, 30, 50, 100, 200, 365};
+        List<Integer> badges = new ArrayList<>();
+        for (int m : milestones) if (longest >= m) badges.add(m);
+
+        result.put("current", current);
+        result.put("longest", longest);
+        result.put("lastStudyDate", dates.get(0));
+        result.put("badges", badges);
+        return result;
+    }
+
     // ========== 읽은 책 ==========
 
     public List<ReadBook> getBooks(String userName) {
