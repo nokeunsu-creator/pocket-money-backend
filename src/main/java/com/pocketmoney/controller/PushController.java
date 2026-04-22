@@ -6,6 +6,8 @@ import com.pocketmoney.repository.PushSubscriptionRepository;
 import com.pocketmoney.repository.TodoRepository;
 import com.pocketmoney.service.PushNotificationService;
 import com.pocketmoney.service.VapidService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,9 @@ public class PushController {
     private final PushSubscriptionRepository subRepo;
     private final PushNotificationService pushService;
     private final TodoRepository todoRepo;
+
+    @Value("${spring.profiles.active:local}")
+    private String activeProfile;
 
     public PushController(VapidService vapidService,
                           PushSubscriptionRepository subRepo,
@@ -60,13 +65,20 @@ public class PushController {
         return Map.of("ok", true);
     }
 
-    /** 테스트용: 즉시 한 번 "오늘 할일" 알림을 모든 구독에 발송 */
+    /** 테스트용: 즉시 한 번 "오늘 할일" 알림을 모든 구독에 발송 (dev 환경만) */
     @PostMapping("/trigger-todo-reminder")
-    public Map<String, Object> triggerTodoReminder() {
+    public ResponseEntity<Map<String, Object>> triggerTodoReminder() {
+        if ("prod".equals(activeProfile)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "ok", false,
+                "error", "Disabled in production",
+                "message", "테스트 알림 엔드포인트는 개발 환경에서만 사용 가능합니다"
+            ));
+        }
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         List<Todo> todos = todoRepo.findUncompletedForToday(today);
         if (todos.isEmpty()) {
-            return Map.of("ok", true, "sent", 0, "message", "오늘 할 일이 없어요");
+            return ResponseEntity.ok(Map.of("ok", true, "sent", 0, "message", "오늘 할 일이 없어요"));
         }
         String title = "📋 오늘 할 일 " + todos.size() + "개 있어요";
         StringBuilder body = new StringBuilder();
@@ -76,13 +88,16 @@ public class PushController {
         }
         if (todos.size() > 3) body.append(" 외 ").append(todos.size() - 3).append("개");
         int sent = pushService.sendToAll(title, body.toString(), "/");
-        return Map.of("ok", true, "sent", sent);
+        return ResponseEntity.ok(Map.of("ok", true, "sent", sent));
     }
 
-    /** 현재 구독 수 (디버그) */
+    /** 현재 구독 수 (dev 환경만) */
     @GetMapping("/subscriptions/count")
-    public Map<String, Long> count() {
-        return Map.of("count", subRepo.count());
+    public ResponseEntity<Map<String, Long>> count() {
+        if ("prod".equals(activeProfile)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.ok(Map.of("count", subRepo.count()));
     }
 
     public static class SubscribeRequest {
